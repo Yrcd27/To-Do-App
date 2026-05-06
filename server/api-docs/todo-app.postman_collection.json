@@ -1,0 +1,1072 @@
+{
+  "info": {
+    "_postman_id": "c3a7f2b1-84d6-4e9a-b531-2f0e1d9c7a45",
+    "name": "TODO App API",
+    "description": "Complete test collection for the TODO App backend.\n\n## How to use\n1. Import this file and `todo-app.postman_environment.json` into Postman.\n2. Select the **TODO App - Local** environment from the top-right dropdown.\n3. Run **Register** or **Login** once — the `access_token` and `todo_id` variables are captured automatically by test scripts.\n4. Every other request picks up those variables — no manual copy-pasting needed.\n\n## Folder structure\n- **Auth** — register, login, profile, token refresh, logout\n- **Todos** — full CRUD, all protected by Bearer token\n- **Error Cases** — validation failures, bad IDs, missing auth, wrong credentials",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:5000",
+      "type": "string",
+      "description": "Override this in your environment file"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('API is running', function () {",
+              "  const json = pm.response.json();",
+              "  pm.expect(json.success).to.be.true;",
+              "  pm.expect(json.message).to.equal('TODO API is running');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "auth": { "type": "noauth" },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/",
+          "host": ["{{base_url}}"],
+          "path": [""]
+        },
+        "description": "Confirm the server is up and reachable."
+      },
+      "response": [
+        {
+          "name": "200 OK — Server Running",
+          "originalRequest": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "body": "{\n  \"success\": true,\n  \"message\": \"TODO API is running\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints — register, login, profile, token refresh, and logout.\n\nRegister or Login first. The `access_token` environment variable is set automatically by the test scripts so all Todo requests work immediately.",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201 Created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Response has accessToken', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.data).to.have.all.keys('id', 'name', 'email');",
+                  "});",
+                  "",
+                  "// Auto-save token so subsequent requests work immediately",
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) {",
+                  "  pm.environment.set('access_token', json.accessToken);",
+                  "  console.log('access_token saved to environment.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"secret123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Create a new user account.\n\n**Required fields:** `name`, `email`, `password` (min 8 chars)\n\nOn success, the `access_token` is automatically saved to the environment."
+          },
+          "response": [
+            {
+              "name": "201 — Registered",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"secret123\"\n}"
+                },
+                "url": { "raw": "{{base_url}}/api/auth/register" }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Account created successfully\",\n  \"accessToken\": \"<jwt_access_token>\",\n  \"data\": {\n    \"id\": \"664a1b2c3d4e5f6a7b8c9d0e\",\n    \"name\": \"Alice Smith\",\n    \"email\": \"alice@example.com\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has accessToken', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "  pm.expect(json.data).to.have.all.keys('id', 'name', 'email');",
+                  "});",
+                  "",
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) {",
+                  "  pm.environment.set('access_token', json.accessToken);",
+                  "  console.log('access_token saved to environment.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"secret123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login with email and password.\n\nOn success, the `access_token` is automatically saved to the environment. A refresh token is also set in an HTTP-only cookie by the server."
+          },
+          "response": [
+            {
+              "name": "200 — Logged In",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"secret123\"\n}"
+                },
+                "url": { "raw": "{{base_url}}/api/auth/login" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logged in successfully\",\n  \"accessToken\": \"<jwt_access_token>\",\n  \"data\": {\n    \"id\": \"664a1b2c3d4e5f6a7b8c9d0e\",\n    \"name\": \"Alice Smith\",\n    \"email\": \"alice@example.com\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get My Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Returns user profile', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.all.keys('id', 'name', 'email', 'createdAt');",
+                  "  pm.expect(json.data).to.not.have.property('password');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "me"]
+            },
+            "description": "Returns the currently authenticated user's profile.\n\nUses the `access_token` from the environment (set automatically on login/register).\n\nNote: `password` is never returned."
+          },
+          "response": [
+            {
+              "name": "200 — Profile",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{base_url}}/api/auth/me" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": \"664a1b2c3d4e5f6a7b8c9d0e\",\n    \"name\": \"Alice Smith\",\n    \"email\": \"alice@example.com\",\n    \"createdAt\": \"2024-05-20T10:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Returns a new access token', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.accessToken).to.be.a('string').and.not.empty;",
+                  "});",
+                  "",
+                  "// Overwrite the stored token with the fresh one",
+                  "const json = pm.response.json();",
+                  "if (json.accessToken) {",
+                  "  pm.environment.set('access_token', json.accessToken);",
+                  "  console.log('Rotated access_token saved to environment.');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "refresh"]
+            },
+            "description": "Issues a new access token (15 min) using the refresh token stored in the HTTP-only cookie.\n\nThe refresh token is also rotated — a new one is issued and the old one is invalidated.\n\nNo request body is needed. The cookie is sent automatically by Postman if you logged in during this session."
+          },
+          "response": [
+            {
+              "name": "200 — New Access Token",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/api/auth/refresh" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"accessToken\": \"<new_jwt_access_token>\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Logout successful', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "});",
+                  "",
+                  "// Clear saved token so protected requests correctly fail after logout",
+                  "pm.environment.set('access_token', '');",
+                  "pm.environment.set('todo_id', '');",
+                  "console.log('Tokens cleared from environment.');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "logout"]
+            },
+            "description": "Clears the refresh token cookie and removes it from the database, making it permanently invalid.\n\nThe test script also clears `access_token` and `todo_id` from the environment."
+          },
+          "response": [
+            {
+              "name": "200 — Logged Out",
+              "originalRequest": {
+                "method": "POST",
+                "url": { "raw": "{{base_url}}/api/auth/logout" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Logged out successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Todos",
+      "description": "Full CRUD for TODOs. All requests in this folder are protected — they inherit the Bearer `{{access_token}}` set at the collection level.\n\nRun **Login** or **Register** first. The `todo_id` variable is automatically captured when you create a TODO.",
+      "item": [
+        {
+          "name": "Get All Todos",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Returns todo list', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json).to.have.property('count');",
+                  "  pm.expect(json.data).to.be.an('array');",
+                  "  pm.expect(json.count).to.equal(json.data.length);",
+                  "});",
+                  "",
+                  "// If todos already exist, save the first ID for quick use",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.length > 0 && !pm.environment.get('todo_id')) {",
+                  "  pm.environment.set('todo_id', json.data[0]._id);",
+                  "  console.log('todo_id set from first result:', json.data[0]._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/todos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos"]
+            },
+            "description": "Fetch all TODOs belonging to the currently authenticated user, sorted newest first.\n\nOther users' TODOs are never returned."
+          },
+          "response": [
+            {
+              "name": "200 — Todo List",
+              "originalRequest": {
+                "method": "GET",
+                "url": { "raw": "{{base_url}}/api/todos" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"count\": 2,\n  \"data\": [\n    {\n      \"_id\": \"664a1b2c3d4e5f6a7b8c9d0f\",\n      \"user\": \"664a1b2c3d4e5f6a7b8c9d0e\",\n      \"title\": \"Buy groceries\",\n      \"description\": \"Milk, eggs, and bread\",\n      \"done\": false,\n      \"createdAt\": \"2024-05-20T12:00:00.000Z\",\n      \"updatedAt\": \"2024-05-20T12:00:00.000Z\"\n    },\n    {\n      \"_id\": \"664a1b2c3d4e5f6a7b8c9d10\",\n      \"user\": \"664a1b2c3d4e5f6a7b8c9d0e\",\n      \"title\": \"Read a book\",\n      \"description\": \"\",\n      \"done\": true,\n      \"createdAt\": \"2024-05-20T11:00:00.000Z\",\n      \"updatedAt\": \"2024-05-20T11:30:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Todo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201 Created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Todo created with correct fields', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.have.all.keys('_id', 'user', 'title', 'description', 'done', 'createdAt', 'updatedAt');",
+                  "  pm.expect(json.data.done).to.be.false;",
+                  "});",
+                  "",
+                  "// Save the new todo's ID for update, toggle, and delete requests",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data._id) {",
+                  "  pm.environment.set('todo_id', json.data._id);",
+                  "  console.log('todo_id saved:', json.data._id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Buy groceries\",\n  \"description\": \"Milk, eggs, and bread\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/todos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos"]
+            },
+            "description": "Create a new TODO for the authenticated user.\n\n**Required:** `title`\n**Optional:** `description`\n\nThe new todo's `_id` is automatically saved to `{{todo_id}}` so you can immediately run Update, Toggle, and Delete."
+          },
+          "response": [
+            {
+              "name": "201 — Todo Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Buy groceries\",\n  \"description\": \"Milk, eggs, and bread\"\n}"
+                },
+                "url": { "raw": "{{base_url}}/api/todos" }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"TODO created successfully\",\n  \"data\": {\n    \"_id\": \"664a1b2c3d4e5f6a7b8c9d0f\",\n    \"user\": \"664a1b2c3d4e5f6a7b8c9d0e\",\n    \"title\": \"Buy groceries\",\n    \"description\": \"Milk, eggs, and bread\",\n    \"done\": false,\n    \"createdAt\": \"2024-05-20T12:00:00.000Z\",\n    \"updatedAt\": \"2024-05-20T12:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Create Todo (title only)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 201 Created', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Description defaults to empty string', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.data.description).to.equal('');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Read a book\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/todos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos"]
+            },
+            "description": "Confirm that `description` is optional and defaults to an empty string when omitted."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Todo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Todo is updated', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data.title).to.equal('Buy groceries and coffee');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Buy groceries and coffee\",\n  \"description\": \"Milk, eggs, bread, and oat milk\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/todos/{{todo_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos", "{{todo_id}}"]
+            },
+            "description": "Update the `title` and/or `description` of the todo identified by `{{todo_id}}`.\n\nYou can send one or both fields. At least one is required."
+          },
+          "response": [
+            {
+              "name": "200 — Todo Updated",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Buy groceries and coffee\",\n  \"description\": \"Updated list\"\n}"
+                },
+                "url": { "raw": "{{base_url}}/api/todos/{{todo_id}}" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"TODO updated successfully\",\n  \"data\": {\n    \"_id\": \"664a1b2c3d4e5f6a7b8c9d0f\",\n    \"user\": \"664a1b2c3d4e5f6a7b8c9d0e\",\n    \"title\": \"Buy groceries and coffee\",\n    \"description\": \"Milk, eggs, bread, and oat milk\",\n    \"done\": false,\n    \"createdAt\": \"2024-05-20T12:00:00.000Z\",\n    \"updatedAt\": \"2024-05-20T12:05:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Toggle Done",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('done field is a boolean', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data.done).to.be.a('boolean');",
+                  "});",
+                  "",
+                  "pm.test('Message reflects new done state', function () {",
+                  "  const json = pm.response.json();",
+                  "  const expectedMsg = json.data.done ? 'TODO marked as done' : 'TODO marked as not done';",
+                  "  pm.expect(json.message).to.equal(expectedMsg);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/todos/{{todo_id}}/done",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos", "{{todo_id}}", "done"]
+            },
+            "description": "Toggle the `done` status of the todo identified by `{{todo_id}}`.\n\n- If `done` is `false`, it becomes `true`.\n- If `done` is `true`, it becomes `false`.\n\nNo request body needed. Run it twice to see it flip back and forth."
+          },
+          "response": [
+            {
+              "name": "200 — Marked as Done",
+              "originalRequest": {
+                "method": "PATCH",
+                "url": { "raw": "{{base_url}}/api/todos/{{todo_id}}/done" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"TODO marked as done\",\n  \"data\": {\n    \"_id\": \"664a1b2c3d4e5f6a7b8c9d0f\",\n    \"user\": \"664a1b2c3d4e5f6a7b8c9d0e\",\n    \"title\": \"Buy groceries and coffee\",\n    \"description\": \"Milk, eggs, bread, and oat milk\",\n    \"done\": true,\n    \"createdAt\": \"2024-05-20T12:00:00.000Z\",\n    \"updatedAt\": \"2024-05-20T12:10:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Todo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 200 OK', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Delete response is correct', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.true;",
+                  "  pm.expect(json.data).to.be.null;",
+                  "});",
+                  "",
+                  "// Clear todo_id after deletion",
+                  "pm.environment.set('todo_id', '');",
+                  "console.log('todo_id cleared after deletion.');"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/todos/{{todo_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos", "{{todo_id}}"]
+            },
+            "description": "Permanently delete the todo identified by `{{todo_id}}`.\n\nThe `todo_id` environment variable is cleared automatically after a successful delete."
+          },
+          "response": [
+            {
+              "name": "200 — Todo Deleted",
+              "originalRequest": {
+                "method": "DELETE",
+                "url": { "raw": "{{base_url}}/api/todos/{{todo_id}}" }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"TODO deleted successfully\",\n  \"data\": null\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Error Cases",
+      "description": "These requests deliberately trigger error responses to verify the API handles bad input, missing auth, and invalid IDs correctly.\n\nAll test scripts assert the expected error status code and `success: false`.",
+      "item": [
+        {
+          "name": "Register — Missing Fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('success is false', function () {",
+                  "  pm.expect(pm.response.json().success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Expected: `400` — name and password are missing."
+          },
+          "response": []
+        },
+        {
+          "name": "Register — Duplicate Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 409 Conflict', function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});",
+                  "",
+                  "pm.test('success is false', function () {",
+                  "  pm.expect(pm.response.json().success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Alice Smith\",\n  \"email\": \"alice@example.com\",\n  \"password\": \"secret123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Expected: `409` — email already registered.\n\nRun **Register** first to create the account, then run this."
+          },
+          "response": []
+        },
+        {
+          "name": "Register — Short Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('success is false', function () {",
+                  "  pm.expect(pm.response.json().success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bob\",\n  \"email\": \"bob@example.com\",\n  \"password\": \"abc\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Expected: `400` — password must be at least 8 characters."
+          },
+          "response": []
+        },
+        {
+          "name": "Login — Wrong Password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Generic error message (no user enumeration)', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.false;",
+                  "  pm.expect(json.message).to.equal('Invalid email or password.');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice@example.com\",\n  \"password\": \"wrongpassword\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Expected: `401` — wrong password.\n\nThe error message is intentionally generic (`Invalid email or password`) to prevent user enumeration — an attacker cannot tell whether the email exists."
+          },
+          "response": []
+        },
+        {
+          "name": "Access Protected Route — No Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('success is false', function () {",
+                  "  pm.expect(pm.response.json().success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/todos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos"]
+            },
+            "description": "Expected: `401` — no Authorization header provided."
+          },
+          "response": []
+        },
+        {
+          "name": "Access Protected Route — Invalid Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 401 Unauthorized', function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('success is false', function () {",
+                  "  pm.expect(pm.response.json().success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "this.is.not.a.valid.jwt", "type": "string" }]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/todos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos"]
+            },
+            "description": "Expected: `401` — token signature is invalid."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Todo — Missing Title",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('success is false', function () {",
+                  "  pm.expect(pm.response.json().success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"No title provided\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/todos",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos"]
+            },
+            "description": "Expected: `400` — `title` is required."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Todo — No Fields Provided",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('success is false', function () {",
+                  "  pm.expect(pm.response.json().success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/todos/{{todo_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos", "{{todo_id}}"]
+            },
+            "description": "Expected: `400` — must provide at least `title` or `description`."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Todo — Invalid ID Format",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 400 Bad Request', function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('CastError handled gracefully', function () {",
+                  "  const json = pm.response.json();",
+                  "  pm.expect(json.success).to.be.false;",
+                  "  pm.expect(json.message).to.include('Invalid ID');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/todos/not-a-valid-mongo-id",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos", "not-a-valid-mongo-id"]
+            },
+            "description": "Expected: `400` — the ID in the URL is not a valid MongoDB ObjectId. The error handler converts the Mongoose `CastError` into a readable message."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Todo — Not Found",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404 Not Found', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('success is false', function () {",
+                  "  pm.expect(pm.response.json().success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Ghost todo\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/todos/664a000000000000000000ff",
+              "host": ["{{base_url}}"],
+              "path": ["api", "todos", "664a000000000000000000ff"]
+            },
+            "description": "Expected: `404` — valid ObjectId format but no matching document exists."
+          },
+          "response": []
+        },
+        {
+          "name": "Unknown Route",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status is 404 Not Found', function () {",
+                  "  pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test('success is false', function () {",
+                  "  pm.expect(pm.response.json().success).to.be.false;",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/does-not-exist",
+              "host": ["{{base_url}}"],
+              "path": ["api", "does-not-exist"]
+            },
+            "description": "Expected: `404` — the `notFound` middleware catches any unmatched route and returns a JSON error instead of Express's default HTML 404 page."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

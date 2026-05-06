@@ -1,0 +1,10 @@
+# Assignment brief — not part of the submission
+docs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
