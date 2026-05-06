@@ -145,7 +145,9 @@ export default function TodoPage() {
         aria-label="Add new task"
         title="New task"
       >
-        +
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+          <path d="M11 4v14M4 11h14" stroke="white" strokeWidth="2.5" strokeLinecap="round"/>
+        </svg>
       </button>
 
       {/* Modal */}

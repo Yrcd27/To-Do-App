@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../api/api';
+import ConfirmModal from './ConfirmModal';
 
 function CheckIcon() {
   return (
@@ -31,6 +32,8 @@ export default function TodoItem({ todo, onUpdated, onDeleted }) {
   const [description, setDescription] = useState(todo.description || '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const handleToggle = async () => {
     try {
@@ -66,12 +69,15 @@ export default function TodoItem({ todo, onUpdated, onDeleted }) {
     setEditing(false);
   };
 
-  const handleDelete = async () => {
+  const handleConfirmDelete = async () => {
+    setDeleting(true);
     try {
       await api.delete(`/todos/${todo._id}`);
       onDeleted(todo._id);
     } catch {
       setError('Failed to delete.');
+      setDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -108,47 +114,61 @@ export default function TodoItem({ todo, onUpdated, onDeleted }) {
   }
 
   return (
-    <div className={`todo-item${todo.done ? ' todo-item--done' : ''}`}>
-      <div className="todo-item-view">
-        <label className="todo-check-label" aria-label={todo.done ? 'Mark as active' : 'Mark as done'}>
-          <input
-            type="checkbox"
-            className="todo-checkbox-input"
-            checked={todo.done}
-            onChange={handleToggle}
-          />
-          <span className="todo-check-mark">
-            {todo.done && <CheckIcon />}
-          </span>
-        </label>
+    <>
+      <div className={`todo-item${todo.done ? ' todo-item--done' : ''}`}>
+        <div className="todo-item-view">
+          <label className="todo-check-label" aria-label={todo.done ? 'Mark as active' : 'Mark as done'}>
+            <input
+              type="checkbox"
+              className="todo-checkbox-input"
+              checked={todo.done}
+              onChange={handleToggle}
+            />
+            <span className="todo-check-mark">
+              {todo.done && <CheckIcon />}
+            </span>
+          </label>
 
-        <div className="todo-content">
-          <p className="todo-title">{todo.title}</p>
-          {todo.description && (
-            <p className="todo-description">{todo.description}</p>
-          )}
-          {error && <p className="form-error" style={{ marginTop: 6 }}>{error}</p>}
-        </div>
+          <div className="todo-content">
+            <p className="todo-title">{todo.title}</p>
+            {todo.description && (
+              <p className="todo-description">{todo.description}</p>
+            )}
+            {error && <p className="form-error" style={{ marginTop: 6 }}>{error}</p>}
+          </div>
 
-        <div className="todo-item-actions">
-          <button
-            className="todo-action-btn"
-            onClick={() => setEditing(true)}
-            aria-label="Edit task"
-            title="Edit"
-          >
-            <EditIcon />
-          </button>
-          <button
-            className="todo-action-btn todo-action-btn--delete"
-            onClick={handleDelete}
-            aria-label="Delete task"
-            title="Delete"
-          >
-            <TrashIcon />
-          </button>
+          <div className="todo-item-actions">
+            <button
+              className="todo-action-btn"
+              onClick={() => setEditing(true)}
+              aria-label="Edit task"
+              title="Edit"
+            >
+              <EditIcon />
+            </button>
+            <button
+              className="todo-action-btn todo-action-btn--delete"
+              onClick={() => setShowDeleteConfirm(true)}
+              aria-label="Delete task"
+              title="Delete"
+            >
+              <TrashIcon />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+
+      {showDeleteConfirm && (
+        <ConfirmModal
+          title="Delete task?"
+          message="This action cannot be undone."
+          confirmLabel="Delete"
+          danger
+          loading={deleting}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+    </>
   );
 }
