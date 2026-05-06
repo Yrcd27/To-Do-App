@@ -1,26 +1,41 @@
 :root {
-  --accent: #aa3bff;
-  --accent-hover: #9022ee;
-  --danger: #e53e3e;
-  --danger-hover: #c53030;
-  --text: #374151;
-  --text-light: #6b7280;
-  --text-heading: #111827;
-  --bg: #f9fafb;
-  --card-bg: #ffffff;
-  --border: #e5e7eb;
-  --input-border: #d1d5db;
-  --input-focus: #aa3bff;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
-  --radius: 8px;
+  --accent: #7C3AED;
+  --accent-hover: #6D28D9;
+  --accent-light: #EDE9FE;
+  --accent-rgb: 124, 58, 237;
+  --danger: #EF4444;
+  --danger-light: #FEE2E2;
+  --danger-hover: #DC2626;
+  --success: #10B981;
+  --success-light: #D1FAE5;
 
-  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --text: #4B5563;
+  --text-light: #9CA3AF;
+  --text-heading: #111827;
+  --bg: #F7F8FF;
+  --card-bg: #FFFFFF;
+  --border: #E9EBF0;
+  --border-light: #F3F4F6;
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.03);
+  --shadow-lg: 0 20px 48px rgba(0,0,0,0.12), 0 8px 16px rgba(0,0,0,0.06);
+  --shadow-accent: 0 4px 16px rgba(124, 58, 237, 0.35);
+
+  --radius: 12px;
+  --radius-lg: 18px;
+  --radius-full: 9999px;
+
+  --input-border: #DDE1EA;
+  --input-focus: var(--accent);
+
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 *,
@@ -33,6 +48,7 @@
 
 body {
   min-height: 100vh;
+  background: var(--bg);
 }
 
 #root {
@@ -43,7 +59,7 @@ body {
 
 h1, h2, h3 {
   color: var(--text-heading);
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.2;
 }
 
@@ -54,8 +70,13 @@ ul {
 a {
   color: var(--accent);
   text-decoration: none;
+  font-weight: 500;
 }
 
 a:hover {
   text-decoration: underline;
+}
+
+button {
+  font-family: inherit;
 }
