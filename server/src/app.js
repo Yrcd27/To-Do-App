@@ -15,7 +15,7 @@ const app = express();
 // --- Security headers (Helmet sets ~15 HTTP headers in one call) ---
 app.use(helmet());
 
-// --- CORS — allow only the configured frontend origin ---
+
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:5173",
